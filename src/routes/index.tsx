@@ -147,7 +147,7 @@ function Index() {
   }
 
   function rowHours(r: DayRow): number | null {
-    if (r.isWeekend && !r.code) return null;
+    if (r.isWeekend && !r.code && !r.userEdited) return null;
     // Holiday rows only contribute hours when the user has actually filled them in.
     if (r.code === "S" && !r.userEdited) return null;
     // Other codes (D, SD, ...) don't contribute to worked/holiday hours.
@@ -165,7 +165,7 @@ function Index() {
     let svatek = 0;
     const counts: Record<string, number> = { D: 0, SD: 0, DPN: 0, "OČR": 0, PV: 0 };
     for (const r of rows) {
-      if (r.isWeekend && !r.code) continue;
+      if (r.isWeekend && !r.code && !r.userEdited) continue;
       if (r.code === "S") {
         // Only edited holiday rows roll into the Svátek total.
         const h = rowHours(r);
@@ -595,7 +595,7 @@ function DayRowEditor({
   // Weekends and holidays are always editable — user can fill in hours if they worked.
   const editable = true;
   const hours = (() => {
-    if (row.isWeekend && !row.code) return null;
+    if (row.isWeekend && !row.code && !row.userEdited) return null;
     if (isHolidayRow && !row.userEdited) return null;
     if (row.code && !isHolidayRow) return null;
     const w = row.departureMin - row.arrivalMin;
@@ -607,7 +607,8 @@ function DayRowEditor({
     const m = parseHHMM(value);
     if (m === null) return;
     const patch: Partial<DayRow> = { [field]: m } as Partial<DayRow>;
-    if (isHolidayRow) patch.userEdited = true;
+    // Mark blank rows (weekends, holidays) as edited once the user fills a time.
+    if (row.isWeekend || isHolidayRow) patch.userEdited = true;
     onChange(patch);
   }
 
