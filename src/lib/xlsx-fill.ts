@@ -179,8 +179,8 @@ export async function generateXlsx(input: FillInput): Promise<void> {
     p.clr(`J${r}`);
   }
 
-  zip.file(sheetPath, p.xml);
   zip.remove("xl/calcChain.xml");
+  zip.file(sheetPath, p.xml);
 
   const blob = await zip.generateAsync({
     type: "blob",
