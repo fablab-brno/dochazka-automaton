@@ -125,11 +125,12 @@ export async function generateXlsx(input: FillInput): Promise<void> {
   // Header row 4. NOTE: do NOT touch J4 — it has a VLOOKUP that derives the
   // month number from I4. Excel recalculates on open.
   p.setStr("D4", input.jmeno);
-  p.setStr("F4", `úvazek ${input.uvazek}`);
   p.setStr("I4", CZECH_MONTHS[input.month - 1]);
   p.setNum("J4", input.month);
   p.setNum("K4", input.year);
-  p.setStr("M4", input.praciste);
+  p.setStr("M4", input.uvazek);
+  // NOTE: target cell for `praciste` in the template header is currently
+  // unknown — leaving it unwritten rather than placing it in the wrong cell.
 
   const last = lastDayOfMonth(input.year, input.month);
 
