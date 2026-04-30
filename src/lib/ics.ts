@@ -1,4 +1,3 @@
-// @ts-expect-error - ical.js has no bundled types
 import ICAL from "ical.js";
 import { ymd } from "./dates";
 
@@ -20,15 +19,13 @@ function dateToYMD(d: Date): string {
  */
 export function parseVacationDays(icsText: string, windowStart: Date, windowEnd: Date): Set<string> {
   const result = new Set<string>();
-  let jcal: unknown;
+  let jcal: any;
   try {
     jcal = ICAL.parse(icsText);
   } catch (e) {
     throw new Error("ICS soubor nelze přečíst (neplatný formát).");
   }
-  // @ts-expect-error untyped
   const comp = new ICAL.Component(jcal);
-  // @ts-expect-error untyped
   const vevents = comp.getAllSubcomponents("vevent");
 
   // Workday window for "covers full day" check (in minutes from midnight)
@@ -36,7 +33,6 @@ export function parseVacationDays(icsText: string, windowStart: Date, windowEnd:
   const WORK_END = 16 * 60 + 30;
 
   for (const ve of vevents) {
-    // @ts-expect-error untyped
     const event = new ICAL.Event(ve);
     const summary: string = event.summary || "";
     if (!isVacationSummary(summary)) continue;
@@ -84,9 +80,8 @@ export function parseVacationDays(icsText: string, windowStart: Date, windowEnd:
 
     if (event.isRecurring()) {
       const it = event.iterator();
-      let next;
+      let next: any;
       let safety = 0;
-      // @ts-expect-error untyped
       while ((next = it.next()) && safety < 2000) {
         safety++;
         const occ = event.getOccurrenceDetails(next);

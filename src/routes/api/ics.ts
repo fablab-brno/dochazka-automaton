@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/ics")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
-      GET: async ({ request }) => {
+      GET: async ({ request }: { request: Request }) => {
         const url = new URL(request.url);
         const target = url.searchParams.get("url");
         if (!target) {
@@ -61,4 +61,4 @@ export const Route = createFileRoute("/api/ics")({
       },
     },
   },
-});
+} as any);
