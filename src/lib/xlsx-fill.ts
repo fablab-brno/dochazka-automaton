@@ -1,4 +1,4 @@
-import XLSX from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { CZECH_MONTHS, deburr, lastDayOfMonth, minutesToExcelFraction } from "./dates";
 
 export interface DayRow {
@@ -11,56 +11,40 @@ export interface DayRow {
   lunchEndMin: number;
   code: string; // "" or D/S/SD/...
   isWeekend: boolean;
+  /** True when the user has manually edited times on this row.
+   * Relevant for code === "S": only edited holiday rows export times. */
+  userEdited?: boolean;
 }
 
 export interface FillInput {
   jmeno: string;
   uvazek: string;
+  praciste: string;
   month: number; // 1..12
   year: number;
   rows: DayRow[];
 }
 
-function setCell(ws: XLSX.WorkSheet, addr: string, value: any) {
-  const existing = ws[addr] || {};
-  if (typeof value === "string") {
-    ws[addr] = { ...existing, t: "s", v: value, w: undefined, f: undefined };
-    delete (ws[addr] as any).f;
-  } else if (typeof value === "number") {
-    ws[addr] = { ...existing, t: "n", v: value, w: undefined, f: undefined };
-    delete (ws[addr] as any).f;
-  }
-}
-
-function clearCell(ws: XLSX.WorkSheet, addr: string) {
-  if (ws[addr]) {
-    // Preserve style, remove value/formula
-    const cell = ws[addr] as any;
-    delete cell.v;
-    delete cell.f;
-    delete cell.w;
-    delete cell.t;
-  }
-}
-
-export async function loadTemplate(): Promise<XLSX.WorkBook> {
+export async function loadTemplate(): Promise<ExcelJS.Workbook> {
   const res = await fetch("/template/vzor_dochzka.xlsx");
   if (!res.ok) throw new Error("Šablona nenalezena.");
   const buf = await res.arrayBuffer();
-  return XLSX.read(buf, { type: "array", cellStyles: true, cellFormula: true });
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  return wb;
 }
 
-export function fillWorkbook(wb: XLSX.WorkBook, input: FillInput): void {
-  // Use third sheet
-  const sheetName = wb.SheetNames[2];
-  if (!sheetName) throw new Error("V šabloně chybí třetí list.");
-  const ws = wb.Sheets[sheetName];
+export function fillWorkbook(wb: ExcelJS.Workbook, input: FillInput): void {
+  // Visible monthly sheet — third sheet, do NOT rename it.
+  const ws = wb.worksheets[2];
+  if (!ws) throw new Error("V šabloně chybí třetí list.");
 
   // Header
-  setCell(ws, "D4", input.jmeno);
-  setCell(ws, "I4", CZECH_MONTHS[input.month - 1]);
-  setCell(ws, "K4", input.year);
-  setCell(ws, "M4", input.uvazek);
+  ws.getCell("D4").value = input.jmeno;
+  ws.getCell("F4").value = `úvazek ${input.uvazek}`;
+  ws.getCell("I4").value = CZECH_MONTHS[input.month - 1];
+  ws.getCell("K4").value = input.year;
+  ws.getCell("M4").value = input.praciste;
 
   const last = lastDayOfMonth(input.year, input.month);
 
@@ -69,32 +53,55 @@ export function fillWorkbook(wb: XLSX.WorkBook, input: FillInput): void {
     const row = 7 + r.day;
     const D = `D${row}`, E = `E${row}`, H = `H${row}`, I = `I${row}`, J = `J${row}`, M = `M${row}`;
 
+    // Weekend: leave everything empty.
     if (r.isWeekend && !r.code) {
-      // Leave untouched (template handles greying)
+      for (const a of [D, E, H, I, J, M]) ws.getCell(a).value = null;
       continue;
     }
 
-    if (r.code) {
-      setCell(ws, D, minutesToExcelFraction(r.arrivalMin));
-      setCell(ws, E, minutesToExcelFraction(r.departureMin));
-      setCell(ws, H, minutesToExcelFraction(r.lunchStartMin));
-      setCell(ws, I, minutesToExcelFraction(r.lunchEndMin));
-      setCell(ws, J, r.code);
-      clearCell(ws, M);
-    } else {
-      // Plain workday
-      setCell(ws, D, minutesToExcelFraction(r.arrivalMin));
-      setCell(ws, E, minutesToExcelFraction(r.departureMin));
-      setCell(ws, H, minutesToExcelFraction(r.lunchStartMin));
-      setCell(ws, I, minutesToExcelFraction(r.lunchEndMin));
-      // Clear J (důvod). Leave M (formula) intact.
-      clearCell(ws, J);
+    // State holiday "S": code only. If user edited times, write them; otherwise blank.
+    if (r.code === "S") {
+      if (r.userEdited) {
+        ws.getCell(D).value = minutesToExcelFraction(r.arrivalMin);
+        ws.getCell(E).value = minutesToExcelFraction(r.departureMin);
+        ws.getCell(H).value = minutesToExcelFraction(r.lunchStartMin);
+        ws.getCell(I).value = minutesToExcelFraction(r.lunchEndMin);
+      } else {
+        for (const a of [D, E, H, I]) ws.getCell(a).value = null;
+      }
+      ws.getCell(J).value = "S";
+      ws.getCell(M).value = null;
+      continue;
     }
+
+    // Vacation/sick/etc (D, SD, DPN, OČR, PV, HO, PC, ŠK, SO):
+    // keep the standard times defaults, blank M.
+    if (r.code) {
+      ws.getCell(D).value = minutesToExcelFraction(r.arrivalMin);
+      ws.getCell(E).value = minutesToExcelFraction(r.departureMin);
+      ws.getCell(H).value = minutesToExcelFraction(r.lunchStartMin);
+      ws.getCell(I).value = minutesToExcelFraction(r.lunchEndMin);
+      ws.getCell(J).value = r.code;
+      ws.getCell(M).value = null;
+      continue;
+    }
+
+    // Plain workday — leave M (formula) intact.
+    ws.getCell(D).value = minutesToExcelFraction(r.arrivalMin);
+    ws.getCell(E).value = minutesToExcelFraction(r.departureMin);
+    ws.getCell(H).value = minutesToExcelFraction(r.lunchStartMin);
+    ws.getCell(I).value = minutesToExcelFraction(r.lunchEndMin);
+    ws.getCell(J).value = null;
   }
 }
 
-export function downloadFilled(wb: XLSX.WorkBook, jmeno: string, year: number, month: number): void {
-  const out = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
+export async function downloadFilled(
+  wb: ExcelJS.Workbook,
+  jmeno: string,
+  year: number,
+  month: number,
+): Promise<void> {
+  const out = await wb.xlsx.writeBuffer();
   const blob = new Blob([out], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
