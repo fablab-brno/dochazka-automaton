@@ -589,7 +589,9 @@ function DayRowEditor({
 
   const isHolidayRow = row.code === "S";
   // Holiday rows start blank; once the user types a time we treat them as edited.
-  const showTimes = !isHolidayRow || !!row.userEdited;
+  // Weekends and state holidays (S) also start blank.
+  const blankRow = (row.isWeekend && !row.code) || (isHolidayRow && !row.userEdited);
+  const showTimes = !blankRow;
   const editable = !row.isWeekend || !!row.code;
   const hours = (() => {
     if (row.isWeekend && !row.code) return null;
