@@ -153,7 +153,10 @@ function Index() {
 
   function rowHours(r: DayRow): number | null {
     if (r.isWeekend && !r.code) return null;
-    if (r.code) return null;
+    // Holiday rows only contribute hours when the user has actually filled them in.
+    if (r.code === "S" && !r.userEdited) return null;
+    // Other codes (D, SD, ...) don't contribute to worked/holiday hours.
+    if (r.code && r.code !== "S") return null;
     const work = r.departureMin - r.arrivalMin;
     const lunch = r.lunchEndMin - r.lunchStartMin;
     const mins = work - lunch;
@@ -162,19 +165,26 @@ function Index() {
 
   const totals = useMemo(() => {
     let worked = 0;
-    const counts: Record<string, number> = { S: 0, D: 0, SD: 0, DPN: 0, "OČR": 0, PV: 0 };
+    let svatek = 0;
+    const counts: Record<string, number> = { D: 0, SD: 0, DPN: 0, "OČR": 0, PV: 0 };
     for (const r of rows) {
       if (r.isWeekend && !r.code) continue;
+      if (r.code === "S") {
+        // Only edited holiday rows roll into the Svátek total.
+        const h = rowHours(r);
+        if (h !== null) svatek += h;
+        continue;
+      }
       if (r.code) {
         if (counts[r.code] !== undefined) counts[r.code]++;
-      } else {
-        const h = rowHours(r);
-        if (h !== null) worked += h;
+        continue;
       }
+      const h = rowHours(r);
+      if (h !== null) worked += h;
     }
     return {
       worked,
-      svatek: counts.S * 8,
+      svatek,
       dovolena: counts.D * 8,
       sick: counts.SD * 8,
       dpn: counts.DPN * 8,
@@ -186,8 +196,8 @@ function Index() {
   async function handleDownload() {
     try {
       const wb = await loadTemplate();
-      fillWorkbook(wb, { jmeno, uvazek, month, year, rows });
-      downloadFilled(wb, jmeno, year, month);
+      fillWorkbook(wb, { jmeno, uvazek, praciste, month, year, rows });
+      await downloadFilled(wb, jmeno, year, month);
     } catch (e: any) {
       alert(e?.message || "Generování selhalo.");
     }
