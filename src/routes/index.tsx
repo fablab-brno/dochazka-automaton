@@ -588,9 +588,10 @@ function DayRowEditor({
   else if (row.code === "D") rowCls += " bg-blue-50";
 
   const isHolidayRow = row.code === "S";
-  // Holiday rows start blank; once the user types a time we treat them as edited.
-  // Weekends and state holidays (S) also start blank.
-  const blankRow = (row.isWeekend && !row.code) || (isHolidayRow && !row.userEdited);
+  // Weekends and state holidays start blank; once the user types a time we treat them as edited.
+  const blankRow =
+    (row.isWeekend && !row.code && !row.userEdited) ||
+    (isHolidayRow && !row.userEdited);
   const showTimes = !blankRow;
   // Weekends and holidays are always editable — user can fill in hours if they worked.
   const editable = true;
