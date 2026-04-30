@@ -581,10 +581,14 @@ function DayRowEditor({
   else if (isHoliday) rowCls += " bg-red-50";
   else if (row.code === "D") rowCls += " bg-blue-50";
 
+  const isHolidayRow = row.code === "S";
+  // Holiday rows start blank; once the user types a time we treat them as edited.
+  const showTimes = !isHolidayRow || !!row.userEdited;
   const editable = !row.isWeekend || !!row.code;
   const hours = (() => {
     if (row.isWeekend && !row.code) return null;
-    if (row.code) return null;
+    if (isHolidayRow && !row.userEdited) return null;
+    if (row.code && !isHolidayRow) return null;
     const w = row.departureMin - row.arrivalMin;
     const l = row.lunchEndMin - row.lunchStartMin;
     return (w - l) / 60;
@@ -593,7 +597,14 @@ function DayRowEditor({
   function setTime(field: keyof DayRow, value: string) {
     const m = parseHHMM(value);
     if (m === null) return;
-    onChange({ [field]: m } as Partial<DayRow>);
+    const patch: Partial<DayRow> = { [field]: m } as Partial<DayRow>;
+    if (isHolidayRow) patch.userEdited = true;
+    onChange(patch);
+  }
+
+  function setCode(value: string) {
+    // Reset edited flag when toggling in/out of "S" so blanks/defaults are restored.
+    onChange({ code: value, userEdited: false });
   }
 
   const cellInputCls =
@@ -608,7 +619,7 @@ function DayRowEditor({
           type="time"
           className={cellInputCls}
           disabled={!editable}
-          value={formatHHMM(row.arrivalMin)}
+          value={showTimes ? formatHHMM(row.arrivalMin) : ""}
           onChange={(e) => setTime("arrivalMin", e.target.value)}
         />
       </td>
@@ -617,7 +628,7 @@ function DayRowEditor({
           type="time"
           className={cellInputCls}
           disabled={!editable}
-          value={formatHHMM(row.departureMin)}
+          value={showTimes ? formatHHMM(row.departureMin) : ""}
           onChange={(e) => setTime("departureMin", e.target.value)}
         />
       </td>
@@ -626,7 +637,7 @@ function DayRowEditor({
           type="time"
           className={cellInputCls}
           disabled={!editable}
-          value={formatHHMM(row.lunchStartMin)}
+          value={showTimes ? formatHHMM(row.lunchStartMin) : ""}
           onChange={(e) => setTime("lunchStartMin", e.target.value)}
         />
       </td>
@@ -635,7 +646,7 @@ function DayRowEditor({
           type="time"
           className={cellInputCls}
           disabled={!editable}
-          value={formatHHMM(row.lunchEndMin)}
+          value={showTimes ? formatHHMM(row.lunchEndMin) : ""}
           onChange={(e) => setTime("lunchEndMin", e.target.value)}
         />
       </td>
@@ -643,7 +654,7 @@ function DayRowEditor({
         <select
           className="rounded border border-input bg-background px-2 py-1 text-xs"
           value={row.code}
-          onChange={(e) => onChange({ code: e.target.value })}
+          onChange={(e) => setCode(e.target.value)}
         >
           {CODES.map((c) => (
             <option key={c} value={c}>{c || "—"}</option>
