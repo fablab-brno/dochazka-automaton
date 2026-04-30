@@ -200,7 +200,7 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-3xl lg:max-w-5xl px-4 py-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Docházka generátor</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -320,6 +320,17 @@ function StepIcs(props: {
             onChange={(e) => props.setIcsUrl(e.target.value)}
           />
         </Field>
+        <p className="text-xs text-muted-foreground">
+          Nevíš, kde odkaz najít?{" "}
+          <a
+            href="/guides/how-to-copy-ics-link.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 hover:text-foreground"
+          >
+            Návod jak zkopírovat ICS odkaz z Outlooku (PDF)
+          </a>
+        </p>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -502,7 +513,7 @@ function StepPreview(props: {
       </p>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+        <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr className="border-b text-left text-xs uppercase text-muted-foreground">
               <th className="px-2 py-2">Datum</th>
@@ -603,7 +614,7 @@ function DayRowEditor({
   }
 
   const cellInputCls =
-    "w-24 rounded border border-input bg-background px-2 py-1 text-xs disabled:opacity-50";
+    "w-[6.5rem] rounded border border-input bg-background px-1.5 py-1 text-xs disabled:opacity-50";
 
   return (
     <tr className={rowCls}>
