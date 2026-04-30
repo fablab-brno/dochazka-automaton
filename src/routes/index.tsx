@@ -12,12 +12,7 @@ import {
 import { lsGet, lsGetJSON, lsSet, lsSetJSON } from "@/lib/storage";
 import { fetchCzechHolidays } from "@/lib/holidays";
 import { fetchIcs, parseVacationDays } from "@/lib/ics";
-import {
-  downloadFilled,
-  fillWorkbook,
-  loadTemplate,
-  type DayRow,
-} from "@/lib/xlsx-fill";
+import { generateXlsx, type DayRow } from "@/lib/xlsx-fill";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -195,9 +190,7 @@ function Index() {
 
   async function handleDownload() {
     try {
-      const wb = await loadTemplate();
-      fillWorkbook(wb, { jmeno, uvazek, praciste, month, year, rows });
-      await downloadFilled(wb, jmeno, year, month);
+      await generateXlsx({ jmeno, uvazek, praciste, month, year, rows });
     } catch (e: any) {
       alert(e?.message || "Generování selhalo.");
     }
