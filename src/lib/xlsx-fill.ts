@@ -127,6 +127,7 @@ export async function generateXlsx(input: FillInput): Promise<void> {
   p.setStr("D4", input.jmeno);
   p.setStr("F4", `úvazek ${input.uvazek}`);
   p.setStr("I4", CZECH_MONTHS[input.month - 1]);
+  p.setNum("J4", input.month);
   p.setNum("K4", input.year);
   p.setStr("M4", input.praciste);
 
@@ -178,6 +179,7 @@ export async function generateXlsx(input: FillInput): Promise<void> {
     p.clr(`J${r}`);
   }
 
+  zip.remove("xl/calcChain.xml");
   zip.file(sheetPath, p.xml);
 
   const blob = await zip.generateAsync({
