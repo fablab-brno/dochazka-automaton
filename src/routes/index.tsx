@@ -159,6 +159,8 @@ function Index() {
   }
 
   const totals = useMemo(() => {
+    const fraction = parseFloat(uvazek.replace(",", ".")) || 1;
+    const hoursPerDay = Math.round(fraction * 8 * 10) / 10;
     let worked = 0;
     let svatek = 0;
     const counts: Record<string, number> = { D: 0, SD: 0, DPN: 0, "OČR": 0, PV: 0 };
@@ -180,13 +182,13 @@ function Index() {
     return {
       worked,
       svatek,
-      dovolena: counts.D * 8,
-      sick: counts.SD * 8,
-      dpn: counts.DPN * 8,
-      ocr: counts["OČR"] * 8,
-      pv: counts.PV * 8,
+      dovolena: counts.D * hoursPerDay,
+      sick: counts.SD * hoursPerDay,
+      dpn: counts.DPN * hoursPerDay,
+      ocr: counts["OČR"] * hoursPerDay,
+      pv: counts.PV * hoursPerDay,
     };
-  }, [rows]);
+  }, [rows, uvazek]);
 
   async function handleDownload() {
     try {
