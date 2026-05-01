@@ -70,13 +70,13 @@ export async function generateXlsx(input: FillInput): Promise<void> {
 
   // Row 1
   ws.mergeCells("C1:M1");
-  ws.getCell("C1").value = "Evidence docházky";
+  ws.getCell("C1").value = "JINTEK, z.ú., Křížkovského 554/12, 603 00 Brno";
   ws.getCell("C1").font = FONT_BOLD;
   ws.getRow(1).height = 16;
 
   // Row 2
   ws.mergeCells("C2:M2");
-  ws.getCell("C2").value = "Docházka";
+  ws.getCell("C2").value = "Evidence docházky";
   ws.getCell("C2").font = FONT_BOLD;
   ws.getRow(2).height = 14;
 
